@@ -1,4 +1,5 @@
 # <div align="center">PaperVizAgent (formerly PaperBanana) 🍌</div>
+
 <div align="center">Dawei Zhu, Rui Meng, Yale Song, Xiyu Wei, Sujian Li, Tomas Pfister and Jinsung yoon
 <br><br>
 
@@ -31,49 +32,58 @@ Originally published as **PaperBanana**, PaperVizAgent achieves high-quality aca
 ## Quick Start
 
 ### Clone the Repo
+
 ```bash
 git clone [your-repo-url]
 cd PaperVizAgent
 ```
 
 ### Configuration
-PaperVizAgent supports configuring API keys and Google Cloud settings via environment variables OR a YAML configuration file. 
+
+PaperVizAgent supports configuring API keys and Google Cloud settings via environment variables OR a YAML configuration file.
 You can duplicate the `configs/model_config.template.yaml` file into `configs/model_config.yaml` to externalize all user configurations. This file is ignored by git to keep your api keys and configurations secret.
 
 ### Downloading the Dataset
-*PaperBananaBench dataset will be released shortly.* 
+
+_PaperBananaBench dataset will be released shortly._
 Once available, you will place it under the `data` directory (e.g., `data/PaperBananaBench/`). The framework is designed to function gracefully without the dataset by bypassing the Retriever Agent's few-shot learning capability.
 
 ### Installing the Environment
+
 1. We use `uv` to manage Python packages. Please install `uv` following the instructions [here](https://docs.astral.sh/uv/getting-started/installation/).
 
 2. Create and activate a virtual environment
-    ```bash
-    uv venv # This will create a virtual environment in the current directory, under .venv/
-    source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-    ```
+
+   ```bash
+   uv venv # This will create a virtual environment in the current directory, under .venv/
+   source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+   ```
 
 3. Install python 3.12
-    ```bash
-    uv python install 3.12
-    ```
+
+   ```bash
+   uv python install 3.12
+   ```
 
 4. Install required packages
-    ```bash
-    uv pip install -r requirements.txt
-    ```
+
+   ```bash
+   uv pip install -r requirements.txt
+   ```
 
 5. Set up API Keys
-    ```bash
-    export GOOGLE_API_KEY="your_google_api_key" # 
-    export ANTHROPIC_API_KEY="your_anthropic_api_key"
-    export OPENAI_API_KEY="your_openai_api_key"
-    ```
+   ```bash
+   export GOOGLE_API_KEY="your_google_api_key" #
+   export ANTHROPIC_API_KEY="your_anthropic_api_key"
+   export OPENAI_API_KEY="your_openai_api_key"
+   ```
 
 ### Launch PaperVizAgent
 
 #### Interactive Demo (Streamlit)
+
 The easiest way to launch PaperVizAgent is via the interactive Streamlit demo:
+
 ```bash
 streamlit run demo.py
 ```
@@ -81,19 +91,23 @@ streamlit run demo.py
 The web interface provides two main workflows:
 
 **1. Generate Candidates Tab**:
+
 - Paste your method section content (Markdown recommended) and provide the figure caption.
 - Configure settings (pipeline mode, retrieval setting, number of candidates, aspect ratio, critic rounds).
 - Click "Generate Candidates" and wait for parallel processing.
 - View results in a grid with evolution timelines and download individual images or batch ZIP.
 
 **2. Refine Image Tab**:
+
 - Upload a generated candidate or any diagram.
 - Describe desired changes or request upscaling.
 - Select resolution (2K/4K) and aspect ratio.
 - Download the refined high-resolution output.
 
 #### Command-Line Interface
+
 You can also run PaperVizAgent from the command line:
+
 ```bash
 # Basic usage with default settings
 python main.py
@@ -108,6 +122,7 @@ python main.py \
 ```
 
 **Available Options:**
+
 - `--dataset_name`: Dataset to use (default: `PaperBananaBench`)
 - `--task_name`: Task type - `diagram` or `plot` (default: `diagram`)
 - `--split_name`: Dataset split (default: `test`)
@@ -115,6 +130,7 @@ python main.py \
 - `--retrieval_setting`: Retrieval strategy - `auto`, `manual`, `random`, or `none` (default: `auto`)
 
 **Experiment Modes:**
+
 - `vanilla`: Direct generation without planning or refinement
 - `dev_planner`: Planner → Visualizer only
 - `dev_planner_stylist`: Planner → Stylist → Visualizer
@@ -126,15 +142,19 @@ python main.py \
 ### Visualization Tools
 
 View pipeline evolution and intermediate results:
+
 ```bash
 streamlit run visualize/show_pipeline_evolution.py
 ```
+
 View evaluation results:
+
 ```bash
 streamlit run visualize/show_referenced_eval.py
 ```
 
 ## Project Structure
+
 ```
 ├── .venv/
 │   └── ...
@@ -189,27 +209,133 @@ streamlit run visualize/show_referenced_eval.py
 ## Key Features
 
 ### Multi-Agent Pipeline
+
 - **Reference-Driven**: Learns from curated examples through generative retrieval
 - **Iterative Refinement**: Critic-Visualizer loop for progressive quality improvement
 - **Style-Aware**: Automatically synthesized aesthetic guidelines ensure academic quality
 - **Flexible Modes**: Multiple experiment modes for different use cases
 
 ### Interactive Demo
+
 - **Parallel Generation**: Generate up to 20 candidate diagrams simultaneously
 - **Pipeline Visualization**: Track the evolution through Planner → Stylist → Critic stages
 - **High-Resolution Refinement**: Upscale to 2K/4K using Image Generation APIs
 - **Batch Export**: Download all candidates as PNG or ZIP
 
 ### Extensible Design
+
 - **Modular Agents**: Each agent is independently configurable
 - **Task Support**: Handles both conceptual diagrams and data plots
 - **Evaluation Framework**: Built-in evaluation against ground truth with multiple metrics
 - **Async Processing**: Efficient batch processing with configurable concurrency
 
+## Fork Changes (OpenRouter & Demo Improvements)
 
+This section documents changes added in this fork on top of the upstream PaperVizAgent README. The sections above are unchanged from the original project documentation.
+
+### Motivation
+
+Run PaperVizAgent locally with a **single OpenRouter API key**, without Google Application Default Credentials (ADC) or a Vertex AI setup. These changes also fix demo UX issues encountered when using OpenRouter-backed Gemini image models.
+
+### OpenRouter inference (`utils/generation_utils.py`)
+
+- Route text and image calls through OpenRouter when `api_keys.openrouter_api_key` and `openrouter.base_url` are configured
+- Detect OpenRouter model slugs automatically (model names containing `/`, e.g. `google/gemini-3.5-flash`)
+- Graceful fallback at import time if Google ADC is unavailable (no startup crash)
+- Image generation via OpenRouter chat API with `modalities: ["image", "text"]`
+- Normalize Gemini-supported aspect ratios before sending to OpenRouter (`1:1`, `8:1`, `21:9`, `16:9`, etc.)
+- Map unsupported aliases (e.g. `32:9` → `21:9`) and reject invalid values with a safe fallback
+- Send only valid image sizes (`1K`, `2K`, `4K`; fixes lowercase `1k` rejection)
+
+### Configuration (`configs/model_config.template.yaml`, `utils/config.py`)
+
+- Replace single `model_name` / `image_model_name` defaults with lists:
+  - `defaults.model_options` — text/VLM agents (Planner, Stylist, Critic, Retriever)
+  - `defaults.image_model_options` — Visualizer and Refine tab
+- **First item in each list is the default**
+- Add `api_keys.openrouter_api_key` and `openrouter.base_url`
+- Template includes example OpenRouter model slugs (Gemini + OpenAI image models)
+
+Example config:
+
+```yaml
+defaults:
+  model_options:
+    - "google/gemini-3.5-flash"
+  image_model_options:
+    - "google/gemini-3.1-flash-image-preview"
+
+api_keys:
+  openrouter_api_key: "sk-or-..."
+
+openrouter:
+  base_url: "https://openrouter.ai/api/v1"
+```
+
+Or via environment variable:
+
+```bash
+export OPENROUTER_API_KEY="sk-or-..."
+```
+
+### Agent fixes
+
+| File                         | Change                                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `agents/planner_agent.py`    | Skip reading `ref.json` when retrieval is disabled (`none`) — avoids crash without the dataset             |
+| `agents/visualizer_agent.py` | OpenRouter model slugs no longer hit unsupported-model errors; normalize aspect ratio; use `1K` image size |
+| `agents/vanilla_agent.py`    | Same OpenRouter routing and aspect-ratio normalization for vanilla image generation                        |
+
+### Demo improvements (`demo.py`)
+
+- **Sidebar model selectors**: shared Text Model and Image Model dropdowns (loaded from yaml lists) for Generate and Refine tabs
+- **Load Example** dropdown with presets:
+  - `PaperVizAgent Framework (Original)` — full method text and caption
+  - `[Wide Test] PaperVizAgent Extra-Wide Pipeline` — horizontal layout hints for ultrawide testing
+- **Aspect ratio options**: `8:1`, `21:9`, `16:9`, `3:2`, `4:3`, `1:1`, `9:16` (removed unsupported `32:9`)
+- Reset stale Streamlit session values for removed aspect ratios
+- Fix Streamlit `session_state` conflicts on method/caption inputs
+- Refine tab uses the sidebar image model and OpenRouter image generation when configured
+
+### Misc
+
+- `visualize/show_pipeline_evolution.py` and `visualize/show_referenced_eval.py`: replace deprecated Streamlit `use_container_width=True` with `width='stretch'`
+
+### Recommended demo settings (OpenRouter)
+
+```bash
+cp configs/model_config.template.yaml configs/model_config.yaml
+# add your OpenRouter key, then:
+streamlit run demo.py
+```
+
+- Retrieval: `none`
+- Mode: `demo_planner_critic` or `demo_full`
+- Aspect ratio: `16:9`, `21:9`, or `8:1` for wide layouts
+- Load the wide-test example preset to stress-test horizontal pipeline diagrams
+
+### Files changed
+
+```
+agents/planner_agent.py
+agents/vanilla_agent.py
+agents/visualizer_agent.py
+configs/model_config.template.yaml
+demo.py
+utils/config.py
+utils/generation_utils.py
+visualize/show_pipeline_evolution.py
+visualize/show_referenced_eval.py
+```
+
+### Pull request
+
+These changes are submitted upstream to [google-research/papervizagent](https://github.com/google-research/papervizagent) via pull request from this fork.
 
 ## Citation
+
 If you find this repo helpful, please cite our paper as follows:
+
 ```bibtex
 @article{zhu2026paperbanana,
   title={PaperBanana: Automating Academic Illustration for AI Scientists},
@@ -220,6 +346,7 @@ If you find this repo helpful, please cite our paper as follows:
 ```
 
 ## Disclaimer
+
 This is not an officially supported Google product. This project is not eligible for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
 
 This project is intended for demonstration purposes only. It is not intended for use in a production environment.

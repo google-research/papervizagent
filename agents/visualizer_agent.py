@@ -149,19 +149,27 @@ class VisualizerAgent(BaseAgent):
                 "max_output_tokens": cfg["max_output_tokens"],
             }
             
-            if cfg["use_image_generation"] and "gemini" in self.model_name:
+            if cfg["use_image_generation"] and (
+                "gemini" in self.model_name
+                or generation_utils.should_use_openrouter_backend(self.model_name)
+            ):
                 # Default to 1:1 if aspect ratio is missing
                 aspect_ratio = "1:1"
                 if "additional_info" in data and "rounded_ratio" in data["additional_info"]:
-                    aspect_ratio = data["additional_info"]["rounded_ratio"]
+                    aspect_ratio = generation_utils.normalize_aspect_ratio(
+                        data["additional_info"]["rounded_ratio"]
+                    )
 
                 gen_config_args["response_modalities"] = ["IMAGE"]
                 gen_config_args["image_config"] = types.ImageConfig(
                     aspect_ratio=aspect_ratio,
-                    image_size="1k",
+                    image_size="1K",
                 )
             
-            if "gemini" in self.model_name:
+            if (
+                generation_utils.should_use_openrouter_backend(self.model_name)
+                or "gemini" in self.model_name
+            ):
                 response_list = await generation_utils.call_gemini_with_retry_async(
                     model_name=self.model_name,
                     contents=content_list,

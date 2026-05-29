@@ -23,6 +23,14 @@ from pathlib import Path
 from typing import Literal
 
 
+def _default_model_from_config(defaults: dict, options_key: str, legacy_key: str) -> str:
+    """Use the first entry in an options list as the default model."""
+    options = defaults.get(options_key, []) or []
+    if options:
+        return options[0]
+    return defaults.get(legacy_key, "")
+
+
 @dataclass
 class ExpConfig:
     """Experiment configuration"""
@@ -51,10 +59,15 @@ class ExpConfig:
             if config_path.exists():
                 with open(config_path, "r", encoding="utf-8") as f:
                     model_config_data = yaml.safe_load(f) or {}
+                    defaults = model_config_data.get("defaults", {})
                     if not self.model_name:
-                        self.model_name = model_config_data.get("defaults", {}).get("model_name", "")
+                        self.model_name = _default_model_from_config(
+                            defaults, "model_options", "model_name"
+                        )
                     if not self.image_model_name:
-                        self.image_model_name = model_config_data.get("defaults", {}).get("image_model_name", "")
+                        self.image_model_name = _default_model_from_config(
+                            defaults, "image_model_options", "image_model_name"
+                        )
         self.timestamp = (
             time.strftime("%m%d_%H%M") if self.timestamp is None else self.timestamp
         )

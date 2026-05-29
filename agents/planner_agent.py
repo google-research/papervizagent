@@ -67,10 +67,25 @@ class PlannerAgent(BaseAgent):
         examples = data.get("retrieved_examples", [])
         if not examples:
             retrieved_ids = data.get("top10_references", [])
-            with open(self.exp_config.work_dir / f"data/PaperBananaBench/{cfg['task_name']}/ref.json", "r", encoding="utf-8") as f:
-                candidate_pool = json.load(f)
-            id_to_item = {item["id"]: item for item in candidate_pool}
-            examples = [id_to_item[ref_id] for ref_id in retrieved_ids if ref_id in id_to_item]
+            if retrieved_ids:
+                ref_file = (
+                    self.exp_config.work_dir
+                    / f"data/PaperBananaBench/{cfg['task_name']}/ref.json"
+                )
+                if ref_file.exists():
+                    with open(ref_file, "r", encoding="utf-8") as f:
+                        candidate_pool = json.load(f)
+                    id_to_item = {item["id"]: item for item in candidate_pool}
+                    examples = [
+                        id_to_item[ref_id]
+                        for ref_id in retrieved_ids
+                        if ref_id in id_to_item
+                    ]
+                else:
+                    print(
+                        f"Warning: Reference file not found at {ref_file}. "
+                        "Continuing without retrieved examples."
+                    )
         
         user_prompt = ""
         for idx, item in enumerate(examples):

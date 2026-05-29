@@ -169,7 +169,7 @@ def display_stage_comparison(item):
                     if human_path and os.path.exists(human_path):
                         try:
                             img = Image.open(human_path)
-                            st.image(img, use_container_width=True)
+                            st.image(img, width='stretch')
                         except Exception as e:
                             st.error(f"Failed to load Human image: {e}")
                     else:
@@ -185,7 +185,7 @@ def display_stage_comparison(item):
                     if img_b64:
                         img = base64_to_image(img_b64)
                         if img:
-                            st.image(img, use_container_width=True)
+                            st.image(img, width='stretch')
                         else:
                             st.error("Failed to decode image")
                     else:
