@@ -16,11 +16,11 @@
 Configuration for experiments
 """
 
-import os
-import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 
 @dataclass
@@ -41,9 +41,6 @@ class ExpConfig:
     timestamp: str | None = None
 
     def __post_init__(self):
-        os.environ["TZ"] = "America/Los_Angeles" # set the timezone as you like
-        time.tzset()  # Only needed once after setting TZ
-        
         # Fallback to yaml config if no model_name provided
         if not self.model_name or not self.image_model_name:
             import yaml
@@ -56,7 +53,8 @@ class ExpConfig:
                     if not self.image_model_name:
                         self.image_model_name = model_config_data.get("defaults", {}).get("image_model_name", "")
         self.timestamp = (
-            time.strftime("%m%d_%H%M") if self.timestamp is None else self.timestamp
+            datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%m%d_%H%M")
+            if self.timestamp is None else self.timestamp
         )
         self.exp_name = f"{self.timestamp}_{self.retrieval_setting}ret_{self.exp_mode}_{self.split_name}"
 
